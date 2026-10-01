@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: User must be signed in via Firebase Authentication
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    // Helper: Prevent read/seen tracking fields
+    function hasNoTrackingFields() {
+      return !('readAt' in request.resource.data) &&
+             !('seenAt' in request.resource.data) &&
+             !('viewerId' in request.resource.data) &&
+             !('openedBy' in request.resource.data) &&
+             !('lastViewed' in request.resource.data) &&
+             !('lastOpened' in request.resource.data);
+    }
+
+    // Default: Deny all unauthenticated or unmatched access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Settings (shared world configuration & relationship status)
+    match /settings/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Notes & Version History subcollection
+    match /notes/{noteId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      allow delete: if isAuthenticated();
+
+      match /versions/{versionId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && hasNoTrackingFields();
+        allow update, delete: if isAuthenticated();
+      }
+    }
+
+    // Starred WhatsApp Messages
+    match /starred_messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      allow delete: if isAuthenticated();
+    }
+
+    // ChatGPT Conversation Links
+    match /chatgpt_links/{linkId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      allow delete: if isAuthenticated();
+    }
+
+    // Vent Entries ("اكتبي هنا وامسحي")
+    match /vent_entries/{ventId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      allow delete: if isAuthenticated();
+    }
+
+    // Improvements across the 4 Personas
+    match /improvements/{itemId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      allow delete: if isAuthenticated();
+    }
+
+    // Moments (لحظات صفا & لحظات الخنقة)
+    match /moments/{momentId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      allow delete: if isAuthenticated();
+    }
+
+    // Hate / Difficult Feelings ("بكرهك")
+    match /hate_entries/{entryId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      allow delete: if isAuthenticated();
+    }
+
+    // Love Reasons ("ألف سبب خلاني أحبك")
+    match /love_reasons/{reasonId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      // Protect the original 50 love reasons from hard deletion
+      allow delete: if isAuthenticated() &&
+        (!('isOriginalSeed' in resource.data) || resource.data.isOriginalSeed != true);
+    }
+
+    // Time Capsule wishes & future letters
+    match /time_capsule/{capsuleId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      allow delete: if isAuthenticated();
+    }
+
+    // Confirmed Memories Archive
+    match /memories/{memoryId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasNoTrackingFields();
+      allow delete: if isAuthenticated();
+    }
+  }
+}
